@@ -81,6 +81,7 @@ nest-asyncio==1.6.0
 notebook==7.5.6
 notebook_shim==0.2.4
 numpy==2.0.2
+-e git+https://github.com/Vinod281997/ocean-gp.git@88725673d8e34b9f6135ea19efaadbb486df3543#egg=oceangp
 orjson==3.11.5
 overrides==7.7.0
 packaging==26.2
