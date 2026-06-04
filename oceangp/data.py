@@ -63,3 +63,4 @@ def magma_dark():
     base = plt.cm.magma
     return LinearSegmentedColormap.from_list("magma_dark",
                                              base(np.linspace(0.18, 1.0, 256)))
+    
