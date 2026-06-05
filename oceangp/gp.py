@@ -37,6 +37,64 @@ class GaussianProcess:
         """
 
         self.X_train = np.asarray(X_train, dtype=np.float64)
-        self.y_train = np.asarray(y_train, dtype=np.float64)
-        K = square_exponential(self.X_train, self.X_train, self.length_scale, self.variance)
+        self.y_train = np.asarray(y_train, dtype=np.float64)       
+        K = square_exponential(self.X_train, self.X_train, 
+                               self.length_scale, self.variance)
+        K = K + self.variance_noise*np.eye(len(self.X_train))
+        self._chol = cho_factor(K)
+        self._alpha = cho_solve(self._chol, self.y_train)
+        self._fitted = True
+        return self
+    
+    def predict(self, X_test):
+        """Posterior prediction at test points.
+        
+        Args:
+            X_test : array_like
+                time points of test data, shape (m,)
+
+        Returns:
+            mean : ndarray
+                Posterior mean at test points, shape (m,)
+            cov : ndarray
+                Posterior covariance at test points, shape (m,)        
+        """
+
+        if not self._fiited:
+            raise ValueError("Call fit() before predict().")
+        
+        X_test = np.asarray(X_test, dtype=np.float64)
+        K_s = square_exponential(self.X_train, X_test, 
+                                 self.length_scale, self.variance)
+        mean = K_s.T @ self._alpha
+        K_ss = square_exponential(X_test, X_test, self.length_scale, self.variance)
+        v = cho_solve(self._chol, K_s)
+        cov = K_ss - K_s.T @ v
+        return mean, cov
+    
+    def log_marginal_likelihood(self):
+        """Log marginal likelihood of the training data under the fitted GP.
+        
+        Returns:
+            float
+                The log marginal likelihood log p(y_train | X_train, theta) 
+                where theta are the hyperparameters.
+                
+        """
+
+        if not self._fitted:
+            raise RuntimeError("Call fit() before marginal_likelihood().")
+        
+        n = len(self.y_train)
+        data_fit = -0.5 * (self.y_train @ self._alpha)
+        log_det = 2.0 * np.sum(np.diag(self._chol[0]))
+        return data_fit - 0.5 * log_det - 0.5 * n * np.log(2*np.pi)
+    
+    
+
+        
+    
+
+        
+
 
