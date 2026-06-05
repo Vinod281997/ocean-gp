@@ -3,6 +3,7 @@
 import numpy as np
 from .kernels import square_exponential
 from scipy.linalg import cho_factor, cho_solve
+from scipy.optimize import minimize
 
 class GaussianProcess:
     """ Zero mean Gaussian Process Regression with squared exponential kernels.
@@ -90,10 +91,56 @@ class GaussianProcess:
         log_det = 2.0 * np.sum(np.diag(self._chol[0]))
         return data_fit - 0.5 * log_det - 0.5 * n * np.log(2*np.pi)
     
-    
+    def fit_hyperparameters(self, X_train, y_train, n_runs=8, rng=None):
+        """Find hyperparameters that maximize the log marginal likelihood.
+        
+        Args:
+            X_train : array_like
+                time points of training data, shape (n,)
+            y_train : array_like
+                observed flow values, shape (n,)
+            n_runs : int, optional
+                Number of random initializations for hyperparameter 
+                optimization. Multiple runs can help avoid local 
+                optima. Default 8.
+            rng : int or arra_like[int], optional
+                Random seed. default None.
+                 
+        Returns:
+            self: GaussianProcess
+        """
+
+        X = np.asarray(X_train, dtype=np.float64)
+        y = np.asarray(y_train, dtype=np.float64)
+        n = len(X)
+        rng = np.random.default_rng(rng)
+
+        def neg_lml(log_theta):
+            ell, variance, variance_noise = np.exp(log_theta)
+            Ky = square_exponential(X, X, ell, variance) + variance_noise * np.eye(n) 
+            try:
+                chol = cho_factor(Ky)
+            except:
+                return 1e25
+
+            alpha = cho_solve(chol, y)
+            log_det = 2.0 * np.sum(np.diag(chol[0]))
+            return 0.5 * (y @ alpha) + 0.5 * log_det + 0.5 * n * np.log(2*np.pi)
+        
+        best = None
+        for _ in range(n_runs):
+            x0 = rng.uniform(-3, 3, size=3)
+            res = minimize(neg_lml, x0, method="L-BFGS_B")
+            if best is None or res.fun < best.fun:
+                best = res
+        
+        self.length_scale, self.variance, self.variance_noise = np.exp(best.x)
+        self.fit(X_train, y_train)
+        return self
+
+
 
         
-    
 
         
 
