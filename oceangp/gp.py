@@ -58,10 +58,10 @@ class GaussianProcess:
             mean : ndarray
                 Posterior mean at test points, shape (m,)
             cov : ndarray
-                Posterior covariance at test points, shape (m,)        
+                Posterior covariance at test points, shape (m, m)        
         """
 
-        if not self._fiited:
+        if not self._fitted:
             raise ValueError("Call fit() before predict().")
         
         X_test = np.asarray(X_test, dtype=np.float64)
@@ -88,7 +88,7 @@ class GaussianProcess:
         
         n = len(self.y_train)
         data_fit = -0.5 * (self.y_train @ self._alpha)
-        log_det = 2.0 * np.sum(np.diag(self._chol[0]))
+        log_det = 2.0 * np.sum(np.log(np.diag(self._chol[0])))
         return data_fit - 0.5 * log_det - 0.5 * n * np.log(2*np.pi)
     
     def fit_hyperparameters(self, X_train, y_train, n_runs=8, rng=None):
@@ -130,7 +130,7 @@ class GaussianProcess:
         best = None
         for _ in range(n_runs):
             x0 = rng.uniform(-3, 3, size=3)
-            res = minimize(neg_lml, x0, method="L-BFGS_B")
+            res = minimize(neg_lml, x0, method="L-BFGS-B")
             if best is None or res.fun < best.fun:
                 best = res
         

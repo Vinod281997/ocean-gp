@@ -3,7 +3,7 @@
 import numpy as np
 
 def square_exponential(x1, x2, length_scale=1.0, variance=1.0):
-    """Squared Exponential (RBF )Kernel between two 1-D input arrays.
+    """Squared Exponential (RBF) Kernel between two 1-D input arrays.
     
     Args:
         x1 : array_like
@@ -27,4 +27,3 @@ def square_exponential(x1, x2, length_scale=1.0, variance=1.0):
     K = variance*np.exp(-sqdist/(2*length_scale**2))
 
     return K
-
